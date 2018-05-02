@@ -208,8 +208,9 @@ class VirtualMachine(object):
         indent = "    "*(len(self.frames)-1)
         stack_rep = repper(self.frame.stack)
         block_stack_rep = repper(self.frame.block_stack)
-
+        stack_size = [sys.getsizeof(e) for e in self.frame.stack]
         log.info("  %sdata: %s" % (indent, stack_rep))
+        log.info("  %sdata size: %s" % (indent, stack_size))
         log.info("  %sblks: %s" % (indent, block_stack_rep))
         log.info("%s%s" % (indent, op))
 
