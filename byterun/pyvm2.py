@@ -973,6 +973,11 @@ class VirtualMachine(object):
                 )
             func = func.im_func
         retval = func(*posargs, **namedargs)
+        if len(self.frames) == 2:
+            print(retval)
+            print(func)
+            print(posargs)
+            print(namedargs)
         self.push(retval)
 
     def byte_RETURN_VALUE(self):
