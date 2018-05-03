@@ -45,6 +45,7 @@ class VirtualMachine(object):
         self.return_value = None
         self.last_exception = None
         self.variables = collections.defaultdict(int)
+        self.actions = []
 
     def top(self):
         """Return the value at the top of the stack, with no changes."""
@@ -150,8 +151,8 @@ class VirtualMachine(object):
             raise VirtualMachineError("Frames left over!")
         if self.frame and self.frame.stack:             # pragma: no cover
             raise VirtualMachineError("Data left on stack! %r" % self.frame.stack)
-
-        return self.variables
+        
+        return self.variables, self.actions
 
     def unwind_block(self, block):
         if block.type == 'except-handler':
@@ -974,10 +975,14 @@ class VirtualMachine(object):
             func = func.im_func
         retval = func(*posargs, **namedargs)
         if len(self.frames) == 2:
-            print(retval)
-            print(func)
-            print(posargs)
-            print(namedargs)
+            posargs_size = []
+            namedargs_size = {}
+            for e in posargs:
+                posargs_size.append(sys.getsizeof(e))
+            for k, v in namedargs.items():
+                namedargs[k] = sys.getsizeof(v)
+            action = (posargs_size, namedargs_size, sys.getsizeof(retval))
+            self.actions.append(action)
         self.push(retval)
 
     def byte_RETURN_VALUE(self):
