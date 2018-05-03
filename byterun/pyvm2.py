@@ -412,7 +412,11 @@ class VirtualMachine(object):
         self.push(val)
 
     def byte_STORE_FAST(self, name):
-        self.frame.f_locals[name] = self.pop()
+        value = self.pop()
+        if len(self.frames) == 2:
+            print("{} = {}".format(name, value))
+            print("size of {}: {}".format(name, sys.getsizeof(value)))
+        self.frame.f_locals[name] = value
 
     def byte_DELETE_FAST(self, name):
         del self.frame.f_locals[name]
