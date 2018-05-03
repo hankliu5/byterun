@@ -46,6 +46,7 @@ class VirtualMachine(object):
         self.last_exception = None
         self.variables = collections.defaultdict(int)
         self.actions = []
+        self.datas = []
 
     def top(self):
         """Return the value at the top of the stack, with no changes."""
@@ -412,14 +413,22 @@ class VirtualMachine(object):
             raise UnboundLocalError(
                 "local variable '%s' referenced before assignment" % name
             )
+        if len(self.frames) == 2:
+            self.datas.append((name, sys.getsizeof(val)))
         self.push(val)
 
     def byte_STORE_FAST(self, name):
-        value = self.pop()
+        val = self.pop()
         if len(self.frames) == 2:
-            self.variables[name] = sys.getsizeof(value)
+            self.variables[name] = sys.getsizeof(val)
+
+            # means it runs LOAD_FAST before, and also means there is a data dependency.
+            if len(self.datas) > 0:
+                self.datas.append((name, sys.getsizeof(val)))
+                self.actions.append(self.datas)
+                self.datas = []
         
-        self.frame.f_locals[name] = value
+        self.frame.f_locals[name] = val
 
     def byte_DELETE_FAST(self, name):
         del self.frame.f_locals[name]
@@ -974,15 +983,6 @@ class VirtualMachine(object):
                 )
             func = func.im_func
         retval = func(*posargs, **namedargs)
-        if len(self.frames) == 2:
-            posargs_size = []
-            namedargs_size = {}
-            for e in posargs:
-                posargs_size.append(sys.getsizeof(e))
-            for k, v in namedargs.items():
-                namedargs[k] = sys.getsizeof(v)
-            action = (posargs_size, namedargs_size, sys.getsizeof(retval))
-            self.actions.append(action)
         self.push(retval)
 
     def byte_RETURN_VALUE(self):
