@@ -9,6 +9,7 @@ import linecache
 import logging
 import operator
 import sys
+import collections
 
 import six
 from six.moves import reprlib
@@ -43,6 +44,7 @@ class VirtualMachine(object):
         self.frame = None
         self.return_value = None
         self.last_exception = None
+        self.variables = collections.defaultdict(int)
 
     def top(self):
         """Return the value at the top of the stack, with no changes."""
@@ -149,7 +151,7 @@ class VirtualMachine(object):
         if self.frame and self.frame.stack:             # pragma: no cover
             raise VirtualMachineError("Data left on stack! %r" % self.frame.stack)
 
-        return val
+        return self.variables
 
     def unwind_block(self, block):
         if block.type == 'except-handler':
@@ -414,8 +416,8 @@ class VirtualMachine(object):
     def byte_STORE_FAST(self, name):
         value = self.pop()
         if len(self.frames) == 2:
-            print("{} = {}".format(name, value))
-            print("size of {}: {}".format(name, sys.getsizeof(value)))
+            self.variables[name] = sys.getsizeof(value)
+        
         self.frame.f_locals[name] = value
 
     def byte_DELETE_FAST(self, name):

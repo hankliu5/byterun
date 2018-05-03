@@ -21,7 +21,7 @@ NoSource = Exception
 
 def exec_code_object(code, env):
     vm = VirtualMachine()
-    vm.run_code(code, f_globals=env)
+    return vm.run_code(code, f_globals=env)
 
 
 # from coverage.py:
@@ -135,7 +135,8 @@ def run_python_file(filename, args, package=None):
         code = compile(source, filename, "exec")
 
         # Execute the source file.
-        exec_code_object(code, main_mod.__dict__)
+        variables = exec_code_object(code, main_mod.__dict__)
+        print variables
     finally:
         # Restore the old __main__
         sys.modules['__main__'] = old_main_mod
