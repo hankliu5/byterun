@@ -317,7 +317,9 @@ class VirtualMachine(object):
         self.push_frame(frame)
         while True:
             byteName, arguments, opoffset = self.parse_byte_and_args()
-            if log.isEnabledFor(logging.INFO):
+
+            # we define the second frame is the main function.
+            if log.isEnabledFor(logging.INFO) and len(self.frames) == 2:
                 self.log(byteName, arguments, opoffset)
 
             # When unwinding the block stack, we need to keep track of why we
