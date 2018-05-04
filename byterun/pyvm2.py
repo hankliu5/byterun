@@ -47,7 +47,7 @@ class VirtualMachine(object):
         self.variables = collections.defaultdict(int)
         self.actions = []
         self.datas = []
-
+        
     def top(self):
         """Return the value at the top of the stack, with no changes."""
         return self.frame.stack[-1]
@@ -319,6 +319,8 @@ class VirtualMachine(object):
 
         """
         self.push_frame(frame)
+        if len(self.frames) == 2:
+            self.main_lineno = frame.f_code.co_firstlineno + 1
         while True:
             byteName, arguments, opoffset = self.parse_byte_and_args()
 
@@ -423,10 +425,11 @@ class VirtualMachine(object):
             self.variables[name] = sys.getsizeof(val)
 
             # means it runs LOAD_FAST before, and also means there is a data dependency.
-            if len(self.datas) > 0:
-                self.datas.append(name)
-                self.actions.append(self.datas)
-                self.datas = []
+            self.datas.append(name)
+            self.datas.append(self.main_lineno)
+            self.actions.append(self.datas)
+            self.datas = []
+            self.main_lineno += 1
         
         self.frame.f_locals[name] = val
 
