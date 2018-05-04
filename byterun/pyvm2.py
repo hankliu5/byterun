@@ -414,7 +414,7 @@ class VirtualMachine(object):
                 "local variable '%s' referenced before assignment" % name
             )
         if len(self.frames) == 2:
-            self.datas.append((name, sys.getsizeof(val)))
+            self.datas.append(name)
         self.push(val)
 
     def byte_STORE_FAST(self, name):
@@ -424,7 +424,7 @@ class VirtualMachine(object):
 
             # means it runs LOAD_FAST before, and also means there is a data dependency.
             if len(self.datas) > 0:
-                self.datas.append((name, sys.getsizeof(val)))
+                self.datas.append(name)
                 self.actions.append(self.datas)
                 self.datas = []
         

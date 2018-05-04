@@ -4,6 +4,7 @@ import imp
 import os
 import sys
 import tokenize
+import collections
 
 from .pyvm2 import VirtualMachine
 
@@ -135,9 +136,8 @@ def run_python_file(filename, args, package=None):
         code = compile(source, filename, "exec")
 
         # Execute the source file.
-        variables, actions = exec_code_object(code, main_mod.__dict__)
-        print variables
-        print actions
+        return exec_code_object(code, main_mod.__dict__)
+
     finally:
         # Restore the old __main__
         sys.modules['__main__'] = old_main_mod
