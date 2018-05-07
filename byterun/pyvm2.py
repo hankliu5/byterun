@@ -321,6 +321,7 @@ class VirtualMachine(object):
         self.push_frame(frame)
         if len(self.frames) == 2:
             self.main_lineno = frame.f_code.co_firstlineno + 1
+            self.main_argv = frame.f_locals.keys()
         while True:
             byteName, arguments, opoffset = self.parse_byte_and_args()
 
@@ -416,7 +417,8 @@ class VirtualMachine(object):
                 "local variable '%s' referenced before assignment" % name
             )
         if len(self.frames) == 2:
-            self.datas.append(name)
+            if name not in self.main_argv:
+                self.datas.append(name)
         self.push(val)
 
     def byte_STORE_FAST(self, name):
