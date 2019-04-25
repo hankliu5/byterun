@@ -30,6 +30,11 @@ repr_obj.maxother = 120
 repper = repr_obj.repr
 
 
+class VirtualMachinePause(Exception):
+    """For raising errors in the operation of the VM."""
+    pass
+
+
 class VirtualMachineError(Exception):
     """For raising errors in the operation of the VM."""
     pass
@@ -43,6 +48,7 @@ class VirtualMachine(object):
         self.frame = None
         self.return_value = None
         self.last_exception = None
+        self.instruction_count = 0
 
     def top(self):
         """Return the value at the top of the stack, with no changes."""
@@ -235,6 +241,9 @@ class VirtualMachine(object):
                     )
                 why = bytecode_fn(*arguments)
 
+        except VirtualMachinePause:
+            raise VirtualMachinePause()
+
         except:
             # deal with exceptions encountered while executing the op.
             self.last_exception = sys.exc_info()[:2] + (None,)
@@ -315,6 +324,9 @@ class VirtualMachine(object):
         """
         self.push_frame(frame)
         while True:
+            self.instruction_count += 1
+            if self.instruction_count >= 10:
+                raise VirtualMachinePause
             byteName, arguments, opoffset = self.parse_byte_and_args()
             if log.isEnabledFor(logging.INFO):
                 self.log(byteName, arguments, opoffset)

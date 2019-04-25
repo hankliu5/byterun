@@ -4,8 +4,9 @@ import imp
 import os
 import sys
 import tokenize
+import types
 
-from .pyvm2 import VirtualMachine
+from .pyvm2 import VirtualMachine, VirtualMachinePause, VirtualMachineError
 
 
 # This code is ripped off from coverage.py.  Define things it expects.
@@ -20,9 +21,27 @@ NoSource = Exception
 
 
 def exec_code_object(code, env):
+    pause_time = 0
     vm = VirtualMachine()
-    vm.run_code(code, f_globals=env)
+    try:
+        vm.run_code(code, f_globals=env)
+    except VirtualMachinePause:
+        pause_time += 1
+        while True:
+            try:
+                vm.instruction_count = 0
+                vm.frames = []
+                vm.resume_frame(vm.frame)
+            except VirtualMachinePause:
+                pause_time += 1
+                continue
+            break
 
+    if vm.frames:  # pragma: no cover
+        raise VirtualMachineError("Frames left over!")
+    if vm.frame and vm.frame.stack:  # pragma: no cover
+        raise VirtualMachineError("Data left on stack! %r" % vm.frame.stack)
+    print('pause time: {}'.format(pause_time))
 
 # from coverage.py:
 
@@ -100,7 +119,7 @@ def run_python_file(filename, args, package=None):
     """
     # Create a module to serve as __main__
     old_main_mod = sys.modules['__main__']
-    main_mod = imp.new_module('__main__')
+    main_mod = types.ModuleType('__main__')
     sys.modules['__main__'] = main_mod
     main_mod.__file__ = filename
     if package:
