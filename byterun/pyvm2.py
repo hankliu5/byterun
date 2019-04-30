@@ -49,6 +49,8 @@ class VirtualMachine(object):
         self.return_value = None
         self.last_exception = None
         self.instruction_count = 0
+        self.last_line_offset = 0
+        self.offset_line_dict = None
 
     def top(self):
         """Return the value at the top of the stack, with no changes."""
@@ -147,6 +149,7 @@ class VirtualMachine(object):
         return val
 
     def run_code(self, code, f_globals=None, f_locals=None):
+        self.offset_line_dict = dict(dis.findlinestarts(code))
         frame = self.make_frame(code, f_globals=f_globals, f_locals=f_locals)
         val = self.run_frame(frame)
         # Check some invariants
@@ -325,9 +328,13 @@ class VirtualMachine(object):
         self.push_frame(frame)
         while True:
             self.instruction_count += 1
-            if self.instruction_count >= 10:
+            if self.instruction_count >= 30:
                 raise VirtualMachinePause
             byteName, arguments, opoffset = self.parse_byte_and_args()
+
+            if opoffset in self.offset_line_dict:
+                self.last_line_offset = opoffset
+
             if log.isEnabledFor(logging.INFO):
                 self.log(byteName, arguments, opoffset)
 

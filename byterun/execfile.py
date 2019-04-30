@@ -29,8 +29,10 @@ def exec_code_object(code, env):
         pause_time += 1
         while True:
             try:
+                print("I'm on line {}".format(vm.offset_line_dict[vm.last_line_offset]))
                 vm.instruction_count = 0
                 vm.frames = []
+                vm.frame.f_lasti = vm.last_line_offset
                 vm.resume_frame(vm.frame)
             except VirtualMachinePause:
                 pause_time += 1
