@@ -36,10 +36,11 @@ def flow_analysis(c):
     available_customized_vars_ordered_dict = OrderedDict()
     customized_vars = set()
     for line in line_blocks:
+        available_customized_vars_ordered_dict[line[0].starts_line] = customized_vars.copy()
         for i in line:
             if i.opname.startswith('STORE_'):
                 customized_vars.add(i.argval)
-        available_customized_vars_ordered_dict[line[0].starts_line] = customized_vars.copy()
+    available_customized_vars_ordered_dict[line_blocks[-1][0].starts_line + 1] = set()
 
     # Calculate UEVar and VarKill for each line
     line_livein_ordered_dict = OrderedDict()
@@ -74,7 +75,7 @@ def flow_analysis(c):
                 change = True
                 line_liveout_ordered_dict[line[0].starts_line] = new_liveout
 
-    line_liveout_ordered_dict[line_blocks[-1][0].starts_line] = set()
+    line_liveout_ordered_dict[line_blocks[-1][0].starts_line+1] = set()
 
     # Get the variables that are necessary to send for each line
     var_to_send_ordered_dict = OrderedDict()
