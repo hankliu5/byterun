@@ -3,6 +3,16 @@ import sys
 from collections import OrderedDict
 
 
+def get_import_name(import_lib_arr):
+    import_names = []
+    for line in import_lib_arr:
+        for i in line:
+            if i.opname.startswith('IMPORT_'):
+                import_names.append(i.argval)
+                break
+    return import_names
+
+
 def flow_analysis(c):
     # dissemble bytecode to a Bytecode object to examine
     bytecode = dis.Bytecode(c)

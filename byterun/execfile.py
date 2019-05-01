@@ -5,7 +5,8 @@ import os
 import sys
 import tokenize
 import types
-
+import importlib
+from .flow_analysis import flow_analysis, get_import_name
 from .pyvm2 import VirtualMachine, VirtualMachinePause, VirtualMachineError
 
 
@@ -22,6 +23,11 @@ NoSource = Exception
 
 def exec_code_object(code, env):
     pause_time = 0
+    var_to_send_ordered_dict, import_lib_arr = flow_analysis(code)
+    import_lib_names_arr = get_import_name(import_lib_arr)
+    for lib_name in import_lib_names_arr:
+        env[lib_name] = importlib.import_module(lib_name)
+    original_env = env.copy()
     vm = VirtualMachine()
     try:
         vm.run_code(code, f_globals=env)
@@ -29,10 +35,20 @@ def exec_code_object(code, env):
         pause_time += 1
         while True:
             try:
-                print("I'm on line {}".format(vm.offset_line_dict[vm.last_line_offset]))
-                vm.instruction_count = 0
-                vm.frames = []
-                vm.frame.f_lasti = vm.last_line_offset
+                new_vm = VirtualMachine()
+                current_line_no = vm.offset_line_dict[vm.last_line_offset]
+                var_to_send_at_this_line = var_to_send_ordered_dict[current_line_no]
+                print("I'm on line {}".format(current_line_no))
+                print("Variables to send are {}\n".format(var_to_send_at_this_line))
+                new_env = original_env.copy()
+                for var_name in var_to_send_at_this_line:
+                    new_env[var_name] = vm.frame.f_locals[var_name]
+                new_vm.frame = new_vm.make_frame(code, f_globals=new_env)
+                new_vm.last_line_offset = vm.last_line_offset
+                new_vm.offset_line_dict = vm.offset_line_dict
+                new_vm.frame.f_lasti = vm.last_line_offset
+                del vm
+                vm = new_vm
                 vm.resume_frame(vm.frame)
             except VirtualMachinePause:
                 pause_time += 1
