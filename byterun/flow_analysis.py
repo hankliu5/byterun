@@ -4,6 +4,11 @@ from collections import OrderedDict
 
 
 def get_import_name(import_lib_arr):
+    """
+    Get the names of import libraries from the lines of import instructions
+    :param import_lib_arr: a list of lines of import instructions
+    :return: a list of names of import libraries
+    """
     import_names = []
     for line in import_lib_arr:
         for i in line:
@@ -14,6 +19,11 @@ def get_import_name(import_lib_arr):
 
 
 def flow_analysis(c):
+    """
+    Doing livein / liveout variable analysis
+    :param c: code object for analysis
+    :return: a tuple contains dict of variables to send back for each line and a list of lines of import instructions
+    """
     # dissemble bytecode to a Bytecode object to examine
     bytecode = dis.Bytecode(c)
     line_blocks = []
@@ -27,7 +37,9 @@ def flow_analysis(c):
         tmp.append(i)
     line_blocks.append(tmp)
 
-    # Ignore import line
+    # Check the line contains import instruction or not.
+    # If it contains import, we record the name of the library
+    # else we append the line to a new list to skip import part.
     new_line_blocks = []
     import_lib_arr = []
     for line in line_blocks:
@@ -42,7 +54,7 @@ def flow_analysis(c):
 
     line_blocks = new_line_blocks
 
-    # Get the user-defined variables for each line in the script
+    # Get the user-defined variables before finishing each line in the script
     available_customized_vars_ordered_dict = OrderedDict()
     customized_vars = set()
     for line in line_blocks:
@@ -50,7 +62,7 @@ def flow_analysis(c):
         for i in line:
             if i.opname.startswith('STORE_'):
                 customized_vars.add(i.argval)
-    available_customized_vars_ordered_dict[line_blocks[-1][0].starts_line + 1] = set()
+    available_customized_vars_ordered_dict[line_blocks[-1][0].starts_line + 1] = customized_vars.copy()
 
     # Calculate UEVar and VarKill for each line
     line_livein_ordered_dict = OrderedDict()
@@ -68,7 +80,7 @@ def flow_analysis(c):
         line_livein_ordered_dict[line[0].starts_line] = livein
         line_varkill_ordered_dict[line[0].starts_line] = VarKill
 
-    # Calculate the liveout variable for each line
+    # Calculate the liveout variable before finishing each line
     line_liveout_ordered_dict = OrderedDict()
     for line in line_blocks:
         line_liveout_ordered_dict[line[0].starts_line] = set()
@@ -87,7 +99,7 @@ def flow_analysis(c):
 
     line_liveout_ordered_dict[line_blocks[-1][0].starts_line+1] = set()
 
-    # Get the variables that are necessary to send for each line
+    # Get the variables that are necessary to send before finishing each line
     var_to_send_ordered_dict = OrderedDict()
     for line_number, liveout in line_liveout_ordered_dict.items():
         available = available_customized_vars_ordered_dict[line_number]

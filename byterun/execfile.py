@@ -31,11 +31,21 @@ def first(s):
 
 def exec_code_object(code, env):
     pause_time = 0
+
+    # do the code analysis to get the variables that are necessary to send before finishing each line
+    # and the lines of import libraries
     var_to_send_ordered_dict, import_lib_arr = flow_analysis(code)
     import_lib_names_arr = get_import_name(import_lib_arr)
+
+    # import the libraries outside the VM because for different VM, the path might be different
+    # So, need to import again when we migrate to the other environment
     for lib_name in import_lib_names_arr:
         env[lib_name] = importlib.import_module(lib_name)
+
+    # Store the original env dictionary
     original_env = env.copy()
+
+    # start from the first execution line after import part
     first_execution_line = first(var_to_send_ordered_dict)
     vm = VirtualMachine()
     try:
@@ -44,18 +54,28 @@ def exec_code_object(code, env):
         pause_time += 1
         while True:
             try:
+                # simulate the migration step
                 new_vm = VirtualMachine()
+
+                # The pause is right before the execution of the instruction
+                # so we need to rewind back to the starting instruction of the current line
                 current_line_no = vm.offset_line_dict[vm.last_line_offset]
                 var_to_send_at_this_line = var_to_send_ordered_dict[current_line_no]
                 print("I'm on line {}".format(current_line_no))
                 print("Variables to send are {}\n".format(var_to_send_at_this_line))
+
+                # put the necessary variables to the new env dictionary for migration
                 new_env = original_env.copy()
                 for var_name in var_to_send_at_this_line:
                     new_env[var_name] = vm.frame.f_locals[var_name]
+
+                # new VM setup
                 new_vm.frame = new_vm.make_frame(code, f_globals=new_env)
                 new_vm.last_line_offset = vm.last_line_offset
                 new_vm.offset_line_dict = vm.offset_line_dict
                 new_vm.frame.f_lasti = vm.last_line_offset
+
+                # drop the old VM and resume the frame
                 del vm
                 vm = new_vm
                 vm.resume_frame(vm.frame)

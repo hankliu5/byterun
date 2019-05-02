@@ -31,7 +31,7 @@ repper = repr_obj.repr
 
 
 class VirtualMachinePause(Exception):
-    """For raising errors in the operation of the VM."""
+    """For simulating interruption in the operation of the VM."""
     pass
 
 
@@ -149,9 +149,12 @@ class VirtualMachine(object):
         return val
 
     def run_code(self, code, f_globals=None, f_locals=None, first_execution_line=None):
+        # get the map between code offset and line.
         self.offset_line_dict = dict(dis.findlinestarts(code))
+
         frame = self.make_frame(code, f_globals=f_globals, f_locals=f_locals)
 
+        # If we want to skip the import part, we look for the offset of the first execution line after import.
         if first_execution_line is not None:
             for offset, line_no in self.offset_line_dict.items():
                 if line_no == first_execution_line:
@@ -334,9 +337,11 @@ class VirtualMachine(object):
         """
         self.push_frame(frame)
         while True:
+            # Simulate VM migration
             self.instruction_count += 1
             if self.instruction_count >= 30:
                 raise VirtualMachinePause
+
             byteName, arguments, opoffset = self.parse_byte_and_args()
 
             if opoffset in self.offset_line_dict:
