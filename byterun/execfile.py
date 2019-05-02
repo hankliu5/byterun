@@ -74,6 +74,8 @@ def exec_code_object(code, env):
                 new_vm.last_line_offset = vm.last_line_offset
                 new_vm.offset_line_dict = vm.offset_line_dict
                 new_vm.frame.f_lasti = vm.last_line_offset
+                new_vm.start_time = vm.start_time
+                new_vm.code_time_map = vm.code_time_map
 
                 # drop the old VM and resume the frame
                 del vm
@@ -88,6 +90,7 @@ def exec_code_object(code, env):
         raise VirtualMachineError("Frames left over!")
     if vm.frame and vm.frame.stack:  # pragma: no cover
         raise VirtualMachineError("Data left on stack! %r" % vm.frame.stack)
+    print(vm.code_time_map)
     print('pause time: {}'.format(pause_time))
 
 # from coverage.py:

@@ -10,6 +10,8 @@ import logging
 import operator
 import sys
 
+from timeit import default_timer
+
 import six
 from six.moves import reprlib
 
@@ -49,8 +51,10 @@ class VirtualMachine(object):
         self.return_value = None
         self.last_exception = None
         self.instruction_count = 0
-        self.last_line_offset = 0
+        self.last_line_offset = None
         self.offset_line_dict = None
+        self.code_time_map = {}
+        self.start_time = None
 
     def top(self):
         """Return the value at the top of the stack, with no changes."""
@@ -345,7 +349,12 @@ class VirtualMachine(object):
             byteName, arguments, opoffset = self.parse_byte_and_args()
 
             if opoffset in self.offset_line_dict:
+                if self.last_line_offset is not None:
+                    duration = default_timer() - self.start_time
+                    self.code_time_map[self.offset_line_dict[self.last_line_offset]] = duration
+
                 self.last_line_offset = opoffset
+                self.start_time = default_timer()
 
             if log.isEnabledFor(logging.INFO):
                 self.log(byteName, arguments, opoffset)
@@ -368,8 +377,10 @@ class VirtualMachine(object):
             if why:
                 break
 
-        # TODO: handle generator exception state
+        duration = default_timer() - self.start_time
+        self.code_time_map[self.offset_line_dict[self.last_line_offset]] = duration
 
+        # TODO: handle generator exception state
         self.pop_frame()
 
         if why == 'exception':
