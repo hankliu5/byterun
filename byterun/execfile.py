@@ -48,6 +48,7 @@ def exec_code_object(code, env):
     # start from the first execution line after import part
     first_execution_line = first(var_to_send_ordered_dict)
     vm = VirtualMachine()
+    vm.var_to_send_ordered_dict = var_to_send_ordered_dict
     try:
         vm.run_code(code, f_globals=env, first_execution_line=first_execution_line)
     except VirtualMachinePause:
@@ -56,6 +57,7 @@ def exec_code_object(code, env):
             try:
                 # simulate the migration step
                 new_vm = VirtualMachine()
+                new_vm.var_to_send_ordered_dict = var_to_send_ordered_dict
 
                 # The pause is right before the execution of the instruction
                 # so we need to rewind back to the starting instruction of the current line
@@ -76,6 +78,7 @@ def exec_code_object(code, env):
                 new_vm.frame.f_lasti = vm.last_line_offset
                 new_vm.start_time = vm.start_time
                 new_vm.code_time_map = vm.code_time_map
+                new_vm.code_size_map = vm.code_size_map
 
                 # drop the old VM and resume the frame
                 del vm
@@ -91,6 +94,8 @@ def exec_code_object(code, env):
     if vm.frame and vm.frame.stack:  # pragma: no cover
         raise VirtualMachineError("Data left on stack! %r" % vm.frame.stack)
     print(vm.code_time_map)
+    print(var_to_send_ordered_dict)
+    print(vm.code_size_map)
     print('pause time: {}'.format(pause_time))
 
 # from coverage.py:
