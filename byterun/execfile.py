@@ -21,6 +21,14 @@ except:
 NoSource = Exception
 
 
+def first(s):
+    """Return the first element from an ordered collection
+       or an arbitrary element from an unordered collection.
+       Raise StopIteration if the collection is empty.
+    """
+    return next(iter(s))
+
+
 def exec_code_object(code, env):
     pause_time = 0
     var_to_send_ordered_dict, import_lib_arr = flow_analysis(code)
@@ -28,9 +36,10 @@ def exec_code_object(code, env):
     for lib_name in import_lib_names_arr:
         env[lib_name] = importlib.import_module(lib_name)
     original_env = env.copy()
+    first_execution_line = first(var_to_send_ordered_dict)
     vm = VirtualMachine()
     try:
-        vm.run_code(code, f_globals=env)
+        vm.run_code(code, f_globals=env, first_execution_line=first_execution_line)
     except VirtualMachinePause:
         pause_time += 1
         while True:

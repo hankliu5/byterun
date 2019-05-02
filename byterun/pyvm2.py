@@ -148,9 +148,16 @@ class VirtualMachine(object):
         frame.f_back = None
         return val
 
-    def run_code(self, code, f_globals=None, f_locals=None):
+    def run_code(self, code, f_globals=None, f_locals=None, first_execution_line=None):
         self.offset_line_dict = dict(dis.findlinestarts(code))
         frame = self.make_frame(code, f_globals=f_globals, f_locals=f_locals)
+
+        if first_execution_line is not None:
+            for offset, line_no in self.offset_line_dict.items():
+                if line_no == first_execution_line:
+                    frame.f_lasti = offset
+                    break
+
         val = self.run_frame(frame)
         # Check some invariants
         if self.frames:            # pragma: no cover
