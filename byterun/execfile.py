@@ -242,8 +242,9 @@ def run_python_file(filename, args, package=None):
             original_file_size = os.stat(args[1]).st_size
             print('original file size: {}'.format(original_file_size))
             with open(args[1], 'rb') as f:
-                rawbytes = f.read(131072)
-                samples = Sampler(rawbytes, f.name.split('.')[-1], (100, 200, 400))
+                rawbytes = f.read(33554432)
+                samples = Sampler(rawbytes, f.name.split('.')[-1], (100, 400, 800))
+                print(samples.sample_filesizes)
 
         # if we don't have input file to sample...
         # which is not our purpose but I still keep this for testing
