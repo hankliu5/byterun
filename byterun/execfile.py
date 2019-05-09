@@ -12,6 +12,7 @@ from .flow_analysis import flow_analysis, get_import_name
 from .pyvm2 import VirtualMachine, VirtualMachinePause, VirtualMachineError
 from .pyvm3 import SamplingVirtualMachine
 import numpy as np
+from timeit import default_timer
 
 # This code is ripped off from coverage.py.  Define things it expects.
 try:
@@ -22,6 +23,7 @@ except:
         return open(fname, "rU")
 
 NoSource = Exception
+null_stdout = open(os.devnull, 'w')
 
 
 def estimate_coef(x, y):
@@ -234,6 +236,7 @@ def run_python_file(filename, args, package=None):
         code = compile(source, filename, "exec")
 
         # insert sampling phase here.
+        total_sampling_time = default_timer()
         samples = None
         if len(args) > 1:
             original_file_size = os.stat(args[1]).st_size
@@ -252,6 +255,8 @@ def run_python_file(filename, args, package=None):
         else:
             # do the code analysis to get the variables that are necessary to send before finishing each line
             # and the lines of import libraries
+            old_stdout = sys.stdout
+            sys.stdout = null_stdout
             var_to_send_ordered_dict, import_lib_arr = flow_analysis(code)
             import_lib_names_arr = get_import_name(import_lib_arr)
 
@@ -274,6 +279,7 @@ def run_python_file(filename, args, package=None):
                     vm.run_code(code, f_globals=original_env, first_execution_line=first_execution_line)
                 except (KeyboardInterrupt, SystemExit):
                     pass
+            sys.stdout = old_stdout
             print(vm.code_time_map)
             print(vm.code_size_map)
 
@@ -295,9 +301,16 @@ def run_python_file(filename, args, package=None):
                     estimate_time = 0
                 print("for {}, the estimated sending size is: {}, estimated runtime is {}".format(
                     line_number, estimate_input_size, estimate_time))
+            total_sampling_time = default_timer() - total_sampling_time
+            print("sampling phases takes {} secs".format(total_sampling_time))
             # Execute the source file.
             sys.argv[:] = old_argv[1:]
+
+            total_execution_time = default_timer()
             exec_code_object(code, main_mod.__dict__)
+            total_execution_time = default_timer() - total_execution_time
+            print("execution phases takes {} secs".format(total_execution_time))
+
     finally:
         # Restore the old __main__
         sys.modules['__main__'] = old_main_mod
