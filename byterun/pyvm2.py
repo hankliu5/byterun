@@ -10,6 +10,7 @@ import logging
 import operator
 import sys
 import os
+from collections import OrderedDict
 
 from timeit import default_timer
 
@@ -55,8 +56,8 @@ class VirtualMachine(object):
         self.last_line_offset = None
         self.offset_line_dict = None
         self.var_to_send_ordered_dict = None
-        self.code_time_map = {}
-        self.code_size_map = {}
+        self.code_time_map = OrderedDict()
+        self.code_size_map = OrderedDict()
         self.start_time = None
 
     def top(self):
