@@ -296,7 +296,7 @@ def run_python_file(filename, args, package=None):
                 print("for {}, the estimated sending size is: {}, estimated runtime is {}".format(
                     line_number, estimate_input_size, estimate_time))
             # Execute the source file.
-            sys.argv[:] = args
+            sys.argv[:] = old_argv[1:]
             exec_code_object(code, main_mod.__dict__)
     finally:
         # Restore the old __main__

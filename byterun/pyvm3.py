@@ -353,21 +353,24 @@ class SamplingVirtualMachine(object):
 
             # hit the starting instruction of the next line
             if opoffset in self.offset_line_dict:
-                # get time and size info of the previous line
+                # get time info of the previous line
                 if self.last_line_offset is not None:
                     last_line_number = self.offset_line_dict[self.last_line_offset]
                     duration = default_timer() - self.start_time
                     self.code_time_map[last_line_number].append(duration)
-                    size = 0
-                    for var_name in self.var_to_send_ordered_dict[last_line_number]:
-                        var = self.frame.f_locals[var_name]
-                        if hasattr(var, 'read'):
-                            size += os.stat(var.name).st_size
-                        else:
-                            size += sys.getsizeof(self.frame.f_locals[var_name])
-                    self.code_size_map[last_line_number].append(size)
 
                 self.last_line_offset = opoffset
+
+                # get the size info of the current line
+                last_line_number = self.offset_line_dict[self.last_line_offset]
+                size = 0
+                for var_name in self.var_to_send_ordered_dict[last_line_number]:
+                    var = self.frame.f_locals[var_name]
+                    if hasattr(var, 'read'):
+                        size += os.stat(var.name).st_size
+                    else:
+                        size += sys.getsizeof(self.frame.f_locals[var_name])
+                self.code_size_map[last_line_number].append(size)
                 self.start_time = default_timer()
 
             if log.isEnabledFor(logging.INFO):
