@@ -44,7 +44,7 @@ class VirtualMachineError(Exception):
     pass
 
 
-class VirtualMachine(object):
+class SamplingVirtualMachine(object):
     def __init__(self):
         # The call stack of frames.
         self.frames = []
@@ -159,6 +159,11 @@ class VirtualMachine(object):
     def run_code(self, code, f_globals=None, f_locals=None, first_execution_line=None):
         # get the map between code offset and line.
         self.offset_line_dict = dict(dis.findlinestarts(code))
+        self.last_line_offset = None
+        for line_number in self.var_to_send_ordered_dict.keys():
+            if line_number not in self.code_time_map:
+                self.code_time_map[line_number] = []
+                self.code_size_map[line_number] = []
 
         frame = self.make_frame(code, f_globals=f_globals, f_locals=f_locals)
 
@@ -345,11 +350,6 @@ class VirtualMachine(object):
         """
         self.push_frame(frame)
         while True:
-            # Simulate VM migration
-            self.instruction_count += 1
-            if self.instruction_count >= 30:
-                raise VirtualMachinePause
-
             byteName, arguments, opoffset = self.parse_byte_and_args()
 
             # hit the starting instruction of the next line
@@ -358,7 +358,7 @@ class VirtualMachine(object):
                 if self.last_line_offset is not None:
                     last_line_number = self.offset_line_dict[self.last_line_offset]
                     duration = default_timer() - self.start_time
-                    self.code_time_map[last_line_number] = duration
+                    self.code_time_map[last_line_number].append(duration)
 
                 self.last_line_offset = opoffset
 
@@ -371,7 +371,7 @@ class VirtualMachine(object):
                         size += os.stat(var.name).st_size
                     else:
                         size += sys.getsizeof(self.frame.f_locals[var_name])
-                self.code_size_map[last_line_number] = size
+                self.code_size_map[last_line_number].append(size)
                 self.start_time = default_timer()
 
             if log.isEnabledFor(logging.INFO):
@@ -396,7 +396,7 @@ class VirtualMachine(object):
                 break
 
         duration = default_timer() - self.start_time
-        self.code_time_map[self.offset_line_dict[self.last_line_offset]] = duration
+        self.code_time_map[self.offset_line_dict[self.last_line_offset]].append(duration)
 
         # TODO: handle generator exception state
         self.pop_frame()
