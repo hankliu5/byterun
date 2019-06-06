@@ -25,6 +25,18 @@ except:
 NoSource = Exception
 null_stdout = open(os.devnull, 'w')
 
+def rsquare(intercept, slope, x_arr, y_arr):
+    # r-squared
+    # SST = Sum(i=1..n) (y_i - y_bar)^2
+    # SSReg = Sum(i=1..n) (y_ihat - y_bar)^2
+    # Rsquared = SSReg/SST
+
+    yhat = [estimate(intercept, slope, x_arr)]
+    ybar = np.sum(y_arr) / len(y_arr)
+    ssreg = np.sum((yhat - ybar) ** 2)
+    sstot = np.sum((y_arr - ybar) ** 2)
+    return ssreg / sstot
+
 
 def estimate_coef(x, y):
     # number of observations/points
@@ -285,12 +297,23 @@ def run_python_file(filename, args, package=None):
             print(vm.code_size_map)
 
             # end of the sampling phase, next for getting the linear regression
+            fn = (np.ones_like, np.log, np.asarray)
             for line_number, time_arr in vm.code_time_map.items():
                 size_arr = vm.code_size_map[line_number]
                 if len(size_arr) > 0:
                     size_arr = np.asarray(size_arr, dtype='float32')
-                    file_to_input_intercept, file_to_input_slope = estimate_coef(samples.sample_filesizes, size_arr)
-                    estimate_input_size = estimate(file_to_input_intercept, file_to_input_slope, original_file_size)
+                    coefficients = []
+                    rsquares = []
+                    # try to fit n, nlogn, n^2
+                    for n in fn:
+                        projected_x_arr = samples.sample_filesizes * n(samples.sample_filesizes)
+                        file_to_input_intercept, file_to_input_slope = estimate_coef(projected_x_arr, size_arr)
+                        coefficients.append((file_to_input_intercept, file_to_input_slope))
+                        rsquares.append(rsquare(file_to_input_intercept, file_to_input_slope, projected_x_arr, size_arr))
+                    best_result_index = np.argmax(rsquares)
+                    file_to_input_intercept, file_to_input_slope = coefficients[best_result_index]
+                    print("best result is {}".format(best_result_index))
+                    estimate_input_size = estimate(file_to_input_intercept, file_to_input_slope, original_file_size * fn[best_result_index](original_file_size))
                 else:
                     estimate_input_size = 0
 

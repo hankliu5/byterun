@@ -234,7 +234,7 @@ class Sampler:
         self.sample_filenames = []
         self.sample_filesizes = []
         self._num_sample_line_tup = num_sample_line_tup
-        if filetype == 'txt':
+        if filetype == 'txt' or filetype == 'csv':
             self._sampling_ascii(rawbytes)
         elif filetype == 'json':
             self._sampling_json(rawbytes)

@@ -1,9 +1,8 @@
 import argparse
-import libKMCUDA
+# import libKMCUDA
 import numpy
 import pandas
 import csv
-import objsize
 
 # def euclid_dist_2(coord1, coord2):
 #     """
