@@ -31,11 +31,16 @@ def rsquare(intercept, slope, x_arr, y_arr):
     # SSReg = Sum(i=1..n) (y_ihat - y_bar)^2
     # Rsquared = SSReg/SST
 
-    yhat = [estimate(intercept, slope, x_arr)]
+    yhat = np.asarray([estimate(intercept, slope, x_arr)])
     ybar = np.sum(y_arr) / len(y_arr)
     ssreg = np.sum((yhat - ybar) ** 2)
     sstot = np.sum((y_arr - ybar) ** 2)
-    return ssreg / sstot
+
+    # when sstot == 0, that means no matter what values of x are, that all project to the same y value.
+    if sstot == 0:
+        return 0
+    else:
+        return ssreg / sstot
 
 
 def estimate_coef(x, y):
